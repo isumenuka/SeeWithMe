@@ -34,6 +34,7 @@ import VoiceInstructions from '@/components/accessibility/VoiceInstructions';
 import AccessibleButton from '@/components/accessibility/AccessibleButton';
 import { AIVisionService } from '@/components/ai/AIVisionService';
 import { VoiceCommandService } from '@/components/scanner/VoiceCommands';
+import { useVolumeButtons } from '@/hooks/useVolumeButtons';
 
 type ScanMode = 'objects' | 'text' | 'faces' | 'navigation';
 
@@ -41,9 +42,9 @@ const SCANNER_INSTRUCTIONS = [
   'This is the AI Vision Scanner',
   'Select a scanning mode: Objects, Text, Faces, or Navigation',
   'Point your camera at what you want to analyze',
-  'Tap the large Scan button to start AI analysis',
+  'Press the volume up button to start AI analysis',
   'Results will be spoken automatically',
-  'Use voice commands by tapping the microphone button',
+  'Use voice commands by tapping the microphone button or with volume buttons',
   'Say scan to start, stop to end, or repeat to hear results again',
 ];
 
@@ -70,6 +71,19 @@ export default function ScannerScreen() {
   const scanRef = useRef<NodeJS.Timeout>();
   const aiService = AIVisionService.getInstance();
   const voiceService = VoiceCommandService.getInstance();
+
+  useVolumeButtons(
+    () => {
+      if (!isScanning) {
+        startScanning();
+      }
+    },
+    () => {
+      if (isScanning) {
+        stopScanning();
+      }
+    }
+  );
 
   const triggerHaptic = () => {
     if (Platform.OS !== 'web') {
@@ -253,7 +267,7 @@ export default function ScannerScreen() {
   return (
     <VoiceNavigator 
       screenName="AI Vision Scanner" 
-      instructions="Camera is ready. Select a scanning mode and tap the scan button to analyze your surroundings."
+      instructions="Camera is ready. Select a scanning mode and press the volume up button to analyze your surroundings."
     >
       <View style={styles.container}>
         <CameraView style={styles.camera} facing={facing}>
@@ -271,7 +285,7 @@ export default function ScannerScreen() {
                 
                 <TouchableOpacity
                   style={[styles.headerButton, isSpeaking && styles.headerButtonActive]}
-                  onPress={isSpeaking ? stopSpeaking : () => speak('AI Vision Scanner ready. Select a scanning mode and tap the scan button.')}
+                  onPress={isSpeaking ? stopSpeaking : () => speak('AI Vision Scanner ready. Select a scanning mode and press volume up to start scanning.')}
                   accessibilityLabel={isSpeaking ? 'Stop speaking' : 'Speak instructions'}
                   accessibilityRole="button"
                 >
@@ -364,27 +378,6 @@ export default function ScannerScreen() {
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.scanButton, isScanning && styles.scanButtonActive]}
-                onPress={isScanning ? stopScanning : startScanning}
-                accessibilityLabel={isScanning ? 'Stop AI scanning' : 'Start AI scanning'}
-                accessibilityRole="button"
-                accessibilityHint={isScanning ? 'Stop the current scan' : 'Begin analyzing what the camera sees'}
-              >
-                <LinearGradient
-                  colors={isScanning ? ['#FF6B6B', '#CC5555'] : ['#00D4FF', '#0099CC']}
-                  style={styles.scanButtonGradient}
-                >
-                  {isScanning ? (
-                    <Square size={28} color="white" strokeWidth={2.5} />
-                  ) : (
-                    <Zap size={28} color="white" strokeWidth={2.5} />
-                  )}
-                  <Text style={styles.scanButtonText}>
-                    {isScanning ? 'Stop' : 'Scan'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.controlButton}
